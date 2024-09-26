@@ -1,0 +1,33 @@
+{
+  "name": "flask_react",
+  "version": "0.1.0",
+  "private": true,
+  "proxy": "http://127.0.0.1:5000",
+  "scripts": {
+    "dev": "react-scripts start",
+    "start-backend": "cd backend && env/bin/flask run --no-debugger",
+    "build": "react-scripts build"
+  },
+  "dependencies": {
+    "axios": "^0.24.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-scripts": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
