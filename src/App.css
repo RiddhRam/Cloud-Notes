@@ -48,16 +48,6 @@ body {
   color: #767676;
 }
 
-.App-body {
-  min-height: 200vmin;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 100px;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
 .App-title {
   display: flex;
   justify-content: center;
@@ -65,7 +55,85 @@ body {
   margin-left: 30px;
 }
 
-.App-logo {
-  height: 20vmin;
-  pointer-events: none;
+.App-body {
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 80px;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.InputSection {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  background-color: #f0f0f0;
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 20px #000;
+  filter: drop-shadow(0 0 0.75rem black);
+  margin-top: -15px;
+}
+
+.InputField {
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transition: transform 0.2s ease;
+}
+
+.InputField:hover {
+  transform: translateY(-4px);
+}
+
+.InputField label {
+  color: #53c3e0;
+  font-weight: 900;
+}
+
+.InputField p {
+  color: #000;
+}
+
+.InputField input {
+  border-radius: 0;
+  border: 2px solid #53c3e0;
+  min-width: 400px;
+  min-height: 50px;
+  font-size: 20px;
+  padding-left: 10px;
+
+  transition: background-color 0.7s ease;
+}
+
+.InputField input:focus {
+  border-color: #007bff;
+  background-color: #b8deff;
+  outline: none;
+}
+
+button {
+  background-color: #53c3e0;
+  border-radius: 5px;
+  border: 0px;
+
+  cursor: pointer;
+
+  font-size: 20px;
+  padding: 15px;
+
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+button:hover {
+  background-color: #3f95ab;
+  transform: translateY(-4px);
+}
+
+button:active {
+  background-color: #2c6f80;
+  transform: translateY(0px);
 }
