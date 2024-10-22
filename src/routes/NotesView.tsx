@@ -1,5 +1,9 @@
 import '../App.css'
 
-export default function NotesView() {
+type NotesViewProps = {
+    onLogout: () => void;
+}
+
+export default function NotesView({ onLogout }: NotesViewProps) {
     return <></>
 }

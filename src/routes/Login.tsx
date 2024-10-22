@@ -1,44 +1,56 @@
 import '../App.css'
 import { useState } from 'react'
-import axios from 'axios'
 
-interface ProfileData {
-  profile_name: string
-  about_me: string
+type LoginProps = {
+    onLogin: () => void;
 }
 
-export default function Login() {
-    const [profileData, setProfileData] = useState<ProfileData | null>(null)
-
-    function getData() {
-        axios({
-            method: "GET",
-            url:"/profile",
-        })
-        .then((response) => {
-            const res =response.data
-            setProfileData(({
-            profile_name: res.name,
-            about_me: res.about}))
-        }).catch((error) => {
-            if (error.response) {
-            console.log(error.response)
-            console.log(error.response.status)
-            console.log(error.response.headers)
-            }
-        })
-    }
+export default function Login({ onLogin }: LoginProps) {
+    const [isLoggingIn, setIsLoggingIn] = useState(false)
 
     return (
     <>
         <div className='App-body'>
+            <h1 style={{ marginTop: "0"}}> {isLoggingIn ? "LOG IN" : "SIGN UP"} </h1>
 
-            <p>To get your profile details: </p><button onClick={getData}>Click me</button>
-            {profileData && <div>
-                <p>Profile name: {profileData.profile_name}</p>
-                <p>About me: {profileData.about_me}</p>
+            <div className='InputSection'>
+                <div className='InputField'>
+                    <label>EMAIL</label>
+                    <input 
+                        type="email" 
+                        name="email_address" 
+                        required
+                    />
                 </div>
-            }
+
+                <div className='InputField'>
+                    <label>PASSWORD</label>
+                    <input 
+                        type="password" 
+                        name="password" 
+                        required
+                    />
+                </div>
+
+                {!isLoggingIn && 
+                <div className='InputField'>
+                    <label>CONFIRM PASSWORD</label>
+                    <input 
+                        type="password" 
+                        name="confirm_password" 
+                        required
+                    />
+                </div>
+                }
+
+                <button onClick={onLogin}>{isLoggingIn ? "LOG IN" : "SIGN UP"}</button>
+                
+                <button 
+                onClick={() => setIsLoggingIn(!isLoggingIn)} 
+                style={{ backgroundColor: "rgb(0, 0, 0, 0)", padding: "0"}}>
+                    {isLoggingIn ? "I don't have an account" : "I have an account"}
+                    </button>
+            </div>
         </div>
     </>
     )
