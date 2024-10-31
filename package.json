@@ -5,7 +5,7 @@
   "proxy": "http://127.0.0.1:5000",
   "scripts": {
     "dev": "react-scripts start",
-    "start-backend": "cd backend && env/bin/flask run --no-debugger",
+    "backend": "cd backend && env/bin/flask run --no-debugger",
     "build": "react-scripts build"
   },
   "dependencies": {
