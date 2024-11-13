@@ -43,7 +43,6 @@ export default function Login({ onLogin }: LoginProps) {
         }
     }
 
-
     return (
     <>
         <div className='App-body'>

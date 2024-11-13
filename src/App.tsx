@@ -8,9 +8,8 @@ import NavBar from './components/NavBar';
 
 axios.defaults.withCredentials = true;
 
-interface ProfileData {
-  profile_name: string
-  about_me: string
+export type ProfileData = {
+  email: string
 }
 
 function App() {
@@ -38,7 +37,7 @@ function App() {
     const url = loggingIn ? '/login' : '/signup';
 
     axios({
-      method: "GET",
+      method: "POST",
       url: url,
       data: {
         email: email,
@@ -97,7 +96,7 @@ function App() {
           <Route
             path="/notes"
             element={
-                profileData ? <NotesView onLogout={handleLogout}/> : <Navigate to="/login" />
+                profileData ? <NotesView onLogout={handleLogout} profileData={profileData}/> : <Navigate to="/login" />
             }
           ></Route>
           

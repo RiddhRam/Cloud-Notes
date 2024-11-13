@@ -1,19 +1,140 @@
-from flask import Flask
+import os
+import re
+from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_bcrypt import Bcrypt
+from dotenv import load_dotenv
 
+# This is for the .env in this folder
+load_dotenv()
+
+# Initialization and configuration
 api = Flask(__name__)
+api.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
+api.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+api.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Allow localhost and 127.0.0.1 to work with each other in the browser. Otherwise it gets blocked even though they're technically the same thing
-CORS(api) 
+# The frontend is on localhost, but the backend is on 127.0.0.1 so we need CORS
+# and also we need to support credentials so the user stays logged in
+CORS(api, supports_credentials=True)
 
-@api.route('/profile', methods=['GET'])
+# Extensions
+db = SQLAlchemy(api)
+bcrypt = Bcrypt(api)
+login_manager = LoginManager()
+login_manager.init_app(api)
+
+# Database Model
+class User(db.Model, UserMixin):
+    __tablename__ = 'user'
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(150), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+
+    def __repr__(self):
+        return f'<User {self.email}>'
+
+# Flask-Login User Loader
+# This function is used by Flask-Login to load the user from the user ID stored in the session
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# API Routes
+@api.route('/signup', methods=['POST'])
+def signup():
+    print("Signing in")
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
+    pattern = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
+
+    if not re.fullmatch(pattern, email):
+        return jsonify({"message": "Please enter a valid email address."}), 400
+
+    if (len(password) < 6):
+        return jsonify({"message": "Password needs to be at least 6 characters!"}), 400
+
+    if not email or not password:
+        return jsonify({"message": "Email and password are required"}), 400
+    
+    print("Checking if user exists")
+
+    # Check if user already exists
+    if User.query.filter_by(email=email).first():
+        return jsonify({"message": "Email address already in use"}), 409
+    
+    print("Hashing password")
+
+    # Hash the password
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+
+    print("Adding to database")
+    # Create new user
+    new_user = User(
+        email=email,
+        password_hash=hashed_password,
+    )
+    db.session.add(new_user)
+    db.session.commit()
+
+    print("Logging in")
+
+    # Log the user in automatically after signup
+    login_user(new_user)
+
+    print("Done!")
+
+    return jsonify({
+        "email": new_user.email,
+    }), 201
+
+
+@api.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
+    if not email or not password:
+        return jsonify({"message": "Email and password are required"}), 400
+
+    user = User.query.filter_by(email=email).first()
+
+    # Check if user exists and password is correct
+    if not user or not bcrypt.check_password_hash(user.password_hash, password):
+        return jsonify({"message": "Invalid email or password"}), 401
+
+    # Log the user in
+    login_user(user)
+
+    return jsonify({
+        "email": user.email,
+    }), 200
+
+
+@api.route('/logout', methods=['POST'])
+# Because of @login_required, only logged in users can access this
+@login_required 
+def logout():
+    logout_user()
+    return jsonify({"message": "Successfully logged out"}), 200
+
+
+@api.route('/api/profile', methods=['GET'])
+@login_required
 def my_profile():
-    response_body = {
-        "name": "Riddh",
-        "about": "Hello world! This is the backend!"
-    }
-    # flask.jsonify automatically creates the correct response object
-    return response_body
+    # current_user is automatically populated by Flask-Login with the user's data
+    return jsonify({
+        "email": current_user.email,
+    }), 200
 
 if __name__ == '__main__':
+    # This context is needed to create the database tables
+    with api.app_context():
+        db.create_all()
     api.run(debug=True)

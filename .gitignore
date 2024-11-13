@@ -25,3 +25,4 @@ yarn-error.log*
 #flask backend
 backend/env
 backend/__pycache__
+backend/.env
