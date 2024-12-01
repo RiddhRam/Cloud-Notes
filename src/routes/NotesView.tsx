@@ -1,16 +1,35 @@
 import '../App.css'
 import { ProfileData } from '../App'
+import { useState, useEffect } from 'react'
 
 type NotesViewProps = {
-    onLogout: () => void;
-    profileData: ProfileData;
+    fetchCloudNotes: () => void;
+    createNewNote: () => void;
 }
 
-export default function NotesView({ onLogout, profileData }: NotesViewProps) {
+export default function NotesView({ fetchCloudNotes, createNewNote }: NotesViewProps) {
+
+    const [searchTerm, setSearchTerm] = useState("")
+
+    useEffect(() => {
+        fetchCloudNotes();
+    }, [])
+
     return (
     <div className='App-body'>
-        <h1>{profileData.email}</h1>
-        <button onClick={onLogout}>Log Out</button>
+
+        <h1>YOUR NOTES</h1>
+
+        {/* Search bar and create new note */}
+        <div className='InputField'>
+            <input 
+                name="search" 
+                placeholder='Search by name'
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+            />
+        </div>
+        
     </div>
     )
 }

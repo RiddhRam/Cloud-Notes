@@ -57,8 +57,36 @@ function App() {
       });
   }
 
-
   function handleLogout() {
+    // Call a backend endpoint that clears the httpOnly cookie from axios library
+    axios({
+        method: "POST",
+        url: "/logout",
+    })
+    .then(() => {
+        setProfileData(null);
+    })
+    .catch((error) => {
+        console.error("Logout failed", error);
+    });
+  }
+
+  function fetchCloudNotes() {
+    // Get the saved notes for this user, only if it exists on the backend. 
+    // If it doesn't exist, user doesn't have any notes
+    /*axios({
+        method: "POST",
+        url: "/logout",
+    })
+    .then(() => {
+        setProfileData(null);
+    })
+    .catch((error) => {
+        console.error("Logout failed", error);
+    });*/
+  }
+
+  function createNewNote() {
     // Call a backend endpoint that clears the httpOnly cookie from axios library
     axios({
         method: "POST",
@@ -75,7 +103,7 @@ function App() {
   return (
     <>
     <BrowserRouter>
-      <NavBar></NavBar>
+      <NavBar onLogout={handleLogout} profileData={profileData}></NavBar>
       <Routes>
         <Route>
 
@@ -96,7 +124,7 @@ function App() {
           <Route
             path="/notes"
             element={
-                profileData ? <NotesView onLogout={handleLogout} profileData={profileData}/> : <Navigate to="/login" />
+                profileData ? <NotesView fetchCloudNotes={fetchCloudNotes} createNewNote={createNewNote} /> : <Navigate to="/login" />
             }
           ></Route>
           

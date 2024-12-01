@@ -1,7 +1,13 @@
+import { ProfileData } from '../App';
 import '../App.css'
 import { Link } from "react-router-dom";
 
-export default function NavBar() {
+type NavbarProps = {
+    onLogout: () => void;
+    profileData: ProfileData | null;
+}
+
+export default function NavBar({ onLogout, profileData }: NavbarProps) {
     return (
         <div className='Navbar'>
             <div className='App-title'>
@@ -10,15 +16,13 @@ export default function NavBar() {
                 </Link>
             </div>
 
-            <div className='Navbar-links'>
-                <Link to="/" className='NavbarText'>
-                    <p>Home</p>
-                </Link>
-
-                <Link to="/notes" className='NavbarText'>
-                    <p>Notes</p>
-                </Link>
+            {/* Log Out */}
+            {profileData && 
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', paddingRight: '20px', justifyContent: "center" }}>
+                <p style={{fontSize: "20px", color: 'white'}}>{profileData.email}</p>
+                <button onClick={onLogout} style={{fontSize: "15px", backgroundColor: '#ed5353'}}>Log Out</button>
             </div>
+            }
         </div>
     )
 }
