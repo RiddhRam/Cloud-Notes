@@ -3,16 +3,23 @@ import { ProfileData } from '../App'
 import { useState, useEffect } from 'react'
 
 type NotesViewProps = {
-    fetchCloudNotes: () => void;
+    fetchCloudNotes: () => Promise<[]>;
     createNewNote: () => void;
+    profileData: ProfileData;
 }
 
-export default function NotesView({ fetchCloudNotes, createNewNote }: NotesViewProps) {
+export default function NotesView({ fetchCloudNotes, createNewNote, profileData }: NotesViewProps) {
 
     const [searchTerm, setSearchTerm] = useState("")
 
     useEffect(() => {
-        fetchCloudNotes();
+        if (profileData == null)
+            return
+
+        fetchCloudNotes().then(notes => {
+            console.log("Fetched " + notes.length + " notes");
+            console.log(notes)
+        })
     }, [])
 
     return (

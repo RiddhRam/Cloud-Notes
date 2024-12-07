@@ -36,6 +36,17 @@ class User(db.Model, UserMixin):
 
     def __repr__(self):
         return f'<User {self.email}>'
+    
+# Database Model for User Notes
+class UserNotes(db.Model):
+    __tablename__ = 'user_notes'
+
+    save_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    save_data = db.Column(db.JSON, nullable=False)
+
+    def __repr__(self):
+        return f'<UserNotes {self.save_id} for User {self.user_id}>'
 
 # Flask-Login User Loader
 # This function is used by Flask-Login to load the user from the user ID stored in the session
@@ -132,6 +143,17 @@ def my_profile():
     return jsonify({
         "email": current_user.email,
     }), 200
+
+@api.route('/api/notes', methods=['GET'])
+@login_required
+def get_user_notes():
+    print("GETTING!")
+    notes = UserNotes.query.filter_by(user_id=current_user.id).first()
+    print("CHECKING")
+    if not notes:
+        return jsonify({"notes": []}), 200
+    
+    return jsonify({"notes": notes.save_data}), 200
 
 if __name__ == '__main__':
     # This context is needed to create the database tables

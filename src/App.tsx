@@ -71,19 +71,15 @@ function App() {
     });
   }
 
-  function fetchCloudNotes() {
-    // Get the saved notes for this user, only if it exists on the backend. 
-    // If it doesn't exist, user doesn't have any notes
-    /*axios({
-        method: "POST",
-        url: "/logout",
-    })
-    .then(() => {
-        setProfileData(null);
-    })
-    .catch((error) => {
-        console.error("Logout failed", error);
-    });*/
+  async function fetchCloudNotes(): Promise<[]> {
+    try {
+      const response = await axios.get('/api/notes');
+      return response.data.notes ?? [];
+    } catch {
+      console.log("Can't get user notes");
+    }
+
+    return [];
   }
 
   function createNewNote() {
@@ -101,7 +97,6 @@ function App() {
   }
 
   return (
-    <>
     <BrowserRouter>
       <NavBar onLogout={handleLogout} profileData={profileData}></NavBar>
       <Routes>
@@ -124,7 +119,7 @@ function App() {
           <Route
             path="/notes"
             element={
-                profileData ? <NotesView fetchCloudNotes={fetchCloudNotes} createNewNote={createNewNote} /> : <Navigate to="/login" />
+                profileData ? <NotesView fetchCloudNotes={fetchCloudNotes} createNewNote={createNewNote} profileData={profileData} /> : <Navigate to="/login" />
             }
           ></Route>
           
@@ -132,7 +127,6 @@ function App() {
       </Routes>
     
     </BrowserRouter>
-    </>
   );
 }
 
