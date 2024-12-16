@@ -147,13 +147,12 @@ def my_profile():
 @api.route('/api/notes', methods=['GET'])
 @login_required
 def get_user_notes():
-    print("GETTING!")
-    notes = UserNotes.query.filter_by(user_id=current_user.id).first()
-    print("CHECKING")
-    if not notes:
-        return jsonify({"notes": []}), 200
+    notes = UserNotes.query.filter_by(user_id=current_user.id).all()
     
-    return jsonify({"notes": notes.save_data}), 200
+    # extract JSON from each note
+    notes_data = [note.save_data for note in notes]  
+    
+    return jsonify({"notes": notes_data}), 200
 
 if __name__ == '__main__':
     # This context is needed to create the database tables
