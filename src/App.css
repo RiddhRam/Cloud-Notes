@@ -1,5 +1,5 @@
 body {
-  background-color: #043a2b;
+  background-color: #033023;
 }
 
 .Navbar {
@@ -85,10 +85,6 @@ body {
   transition: transform 0.2s ease;
 }
 
-.InputField:hover {
-  transform: translateY(-4px);
-}
-
 .InputField label {
   color: #53c3e0;
   font-weight: 900;
@@ -98,7 +94,7 @@ body {
   color: #000;
 }
 
-.InputField input {
+.InputField input, .InputField textarea {
   border-radius: 0;
   border: 2px solid #53c3e0;
   min-width: 400px;
@@ -106,13 +102,18 @@ body {
   font-size: 20px;
   padding-left: 10px;
 
-  transition: background-color 0.7s ease;
+  transition: background-color 0.7s ease, transform 0.2s ease;
 }
 
-.InputField input:focus {
+.InputField input:hover, .InputField textarea:hover {
+  transform: translateY(-4px);
+}
+
+.InputField input:focus, .InputField textarea:focus {
   border-color: #007bff;
   background-color: #b8deff;
   outline: none;
+  transform: translateY(-4px);
 }
 
 button {
