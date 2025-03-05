@@ -145,7 +145,7 @@ export default function NotesView({ fetchCloudNotes, createNewNote, profileData 
         </div>
 
         {/* Display notes */}
-        <div style={{ display: 'flex', flexWrap: "wrap", justifyContent: "center", alignItems: 'stretch', gap: '40px', marginTop: '40px' }}>
+        <div style={{ display: 'flex', flexWrap: "wrap", justifyContent: "center", alignItems: 'stretch', gap: '30px', marginTop: '40px' }}>
             {filteredNotes.length == 0 
             ? 
             <p>No notes found</p>
@@ -191,6 +191,7 @@ export default function NotesView({ fetchCloudNotes, createNewNote, profileData 
                             placeholder="Title"
                             value={noteTitle}
                             onChange={(e) => setNoteTitle(e.target.value)}
+                            style={{margin: "20px 0", padding: '5px'}}
                         />
 
                         <textarea
@@ -198,10 +199,12 @@ export default function NotesView({ fetchCloudNotes, createNewNote, profileData 
                             value={noteBody}
                             onChange={(e) => setNoteBody(e.target.value)}
                             rows={10}
+                            style={{margin: "20px 0", padding: '5px'}}
                         />
 
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '30px' }}>
-                            <button onClick={handleCancel} style={{ backgroundColor: '#ed5353' }}>Cancel</button>
+                            <button onClick={handleCancel} style={{ backgroundColor: '#adadadff' }}>Cancel</button>
+                            <button onClick={handleCancel} style={{ backgroundColor: '#ed5353' }}>Delete</button>
                             <button onClick={handleSaveNote} style={{ backgroundColor: "#39ff14" }}>Save</button>
                         </div>
                     </div>
