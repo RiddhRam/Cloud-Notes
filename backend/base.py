@@ -57,7 +57,6 @@ def load_user(user_id):
 # API Routes
 @api.route('/signup', methods=['POST'])
 def signup():
-    print("Signing in")
     data = request.get_json()
     email = data.get('email')
     password = data.get('password')
@@ -72,19 +71,14 @@ def signup():
 
     if not email or not password:
         return jsonify({"message": "Email and password are required"}), 400
-    
-    print("Checking if user exists")
 
     # Check if user already exists
     if User.query.filter_by(email=email).first():
         return jsonify({"message": "Email address already in use"}), 409
-    
-    print("Hashing password")
 
     # Hash the password
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
-    print("Adding to database")
     # Create new user
     new_user = User(
         email=email,
@@ -93,15 +87,11 @@ def signup():
     db.session.add(new_user)
     db.session.commit()
 
-    print("Logging in")
-
     # Log the user in automatically after signup
     login_user(new_user)
 
-    print("Done!")
-
     return jsonify({
-        "email": new_user.email,
+        "email": new_user.email
     }), 201
 
 
@@ -124,7 +114,7 @@ def login():
     login_user(user)
 
     return jsonify({
-        "email": user.email,
+        "email": user.email
     }), 200
 
 
@@ -135,6 +125,22 @@ def logout():
     logout_user()
     return jsonify({"message": "Successfully logged out"}), 200
 
+@api.route('/createNewNote', methods=['POST'])
+@login_required 
+def create_new_note():
+    data = request.get_json()
+    note_data = data.get('note')
+
+    # Write the note
+    new_note = UserNotes(
+        user_id = current_user.id,
+        save_data = note_data
+    )
+    db.session.add(new_note)
+    db.session.commit()
+
+    # Return saveId
+    return jsonify({"id": new_note.save_id}), 200
 
 @api.route('/api/profile', methods=['GET'])
 @login_required
@@ -142,6 +148,7 @@ def my_profile():
     # current_user is automatically populated by Flask-Login with the user's data
     return jsonify({
         "email": current_user.email,
+        "id": current_user.id
     }), 200
 
 @api.route('/api/notes', methods=['GET'])
@@ -150,7 +157,7 @@ def get_user_notes():
     notes = UserNotes.query.filter_by(user_id=current_user.id).all()
     
     # extract JSON from each note
-    notes_data = [note.save_data for note in notes]  
+    notes_data = [{"saveId": note.save_id, "note": note.save_data} for note in notes] 
     
     return jsonify({"notes": notes_data}), 200
 

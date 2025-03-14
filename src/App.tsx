@@ -10,6 +10,7 @@ axios.defaults.withCredentials = true;
 
 export type ProfileData = {
   email: string
+  id: string
 }
 
 function App() {
@@ -22,7 +23,7 @@ function App() {
       try {
         const response = await axios.get('/api/profile');
         // Set user data if logged in
-        setProfileData(response.data); 
+        setProfileData(response.data);
       } catch (error) {
         // If the request fails it means the user is not logged in
         console.log("User not authenticated.");
@@ -82,18 +83,17 @@ function App() {
     return [];
   }
 
-  function createNewNote() {
-    // Call a backend endpoint that clears the httpOnly cookie from axios library
-    axios({
-        method: "POST",
-        url: "/logout",
-    })
-    .then(() => {
-        setProfileData(null);
-    })
-    .catch((error) => {
-        console.error("Logout failed", error);
-    });
+  async function createNewNote(noteTitleAndBody: string): Promise<string> {
+    try {
+      const response = await axios.post("/createNewNote", {
+        note: noteTitleAndBody,
+      });
+
+      return response.data.saveid;
+    } catch (error) {
+      console.error("Create note failed", error);
+      return "ERROR";
+    }
   }
 
   return (

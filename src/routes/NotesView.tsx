@@ -2,15 +2,15 @@ import '../App.css'
 import { ProfileData } from '../App'
 import { useState, useEffect } from 'react'
 
-type NotesViewProps = {
-    fetchCloudNotes: () => Promise<[]>;
-    createNewNote: () => void;
-    profileData: ProfileData;
-}
-
 type NotesData = {
     saveId: string;
     note: string;
+}
+
+type NotesViewProps = {
+    fetchCloudNotes: () => Promise<[]>;
+    createNewNote: (noteTitleAndBody: string) => Promise<string>;
+    profileData: ProfileData;
 }
 
 export default function NotesView({ fetchCloudNotes, createNewNote, profileData }: NotesViewProps) {
@@ -47,7 +47,7 @@ export default function NotesView({ fetchCloudNotes, createNewNote, profileData 
         setShowModal(true)
     }
 
-    const handleSaveNote = () => {
+    const handleSaveNote = async () => {
         let title = noteTitle
         let body = noteBody
 
@@ -63,8 +63,10 @@ export default function NotesView({ fetchCloudNotes, createNewNote, profileData 
         // If no saveId, this is a new note and needs to be added to the database
         if (saveId == "") {
             // Save to cloud, returns saveId from the SQL database
-            //saveId = createNewNote(title, body)
-            saveId = ""
+            saveId = await createNewNote(`${title}${breakString}${body}`)
+            if (saveId == "ERROR") {
+                return;
+            }
         }
 
         const newNote: NotesData = {
@@ -103,18 +105,7 @@ export default function NotesView({ fetchCloudNotes, createNewNote, profileData 
             console.log("Fetched " + notes.length + " notes");
             console.log(notes)
 
-            const formattedNotes: NotesData[] = [
-                {saveId: '1', note: `This is my title.${breakString}HI!!!`},
-                {saveId: '2', note: `Good.${breakString}WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW`},
-                {saveId: '3', note: `Good.${breakString}WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW`},
-                {saveId: '4', note: `Good.${breakString}WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW`},
-                {saveId: '5', note: `Good.${breakString}WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW`},
-                {saveId: '6', note: `Good.${breakString}WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW`},
-                {saveId: '7', note: `Good.${breakString}WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW`},
-            ]
-
-            //setFetchedNotes(notes)
-            setFetchedNotes(formattedNotes)
+            setFetchedNotes(notes)
         })
     }, [])
 
