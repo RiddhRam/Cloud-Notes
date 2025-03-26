@@ -96,6 +96,21 @@ function App() {
     }
   }
 
+  async function editNote(saveId: string, noteTitleAndBody: string): Promise<number> {
+    try {
+      const response = await axios.post("/editNote", {
+        id: saveId,
+        note: noteTitleAndBody,
+      });
+
+      return response.status;
+    } catch (error) {
+      console.error("Create note failed", error);
+      return 400;
+    }
+    
+  }
+
   return (
     <BrowserRouter>
       <NavBar onLogout={handleLogout} profileData={profileData}></NavBar>
@@ -119,7 +134,12 @@ function App() {
           <Route
             path="/notes"
             element={
-                profileData ? <NotesView fetchCloudNotes={fetchCloudNotes} createNewNote={createNewNote} profileData={profileData} /> : <Navigate to="/login" />
+                profileData ? 
+                <NotesView 
+                fetchCloudNotes={fetchCloudNotes} 
+                createNewNote={createNewNote} 
+                editNote={editNote} 
+                profileData={profileData} /> : <Navigate to="/login" />
             }
           ></Route>
           

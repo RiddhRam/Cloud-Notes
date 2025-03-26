@@ -142,6 +142,24 @@ def create_new_note():
     # Return saveId
     return jsonify({"id": new_note.save_id}), 200
 
+@api.route('/editNote', methods=['POST'])
+@login_required 
+def edit_note():
+    data = request.get_json()
+    id = data.get('id')
+    note_data = data.get('note')
+
+    # Find the existing note
+    note = UserNotes.query.filter_by(save_id=id, user_id=current_user.id).first()
+
+    if note:
+        # Update the note
+        note.save_data = note_data
+        db.session.commit()
+        return jsonify({'message': 'Note updated successfully'}), 200
+    else:
+        return jsonify({'error': 'Note not found'}), 404
+
 @api.route('/api/profile', methods=['GET'])
 @login_required
 def my_profile():

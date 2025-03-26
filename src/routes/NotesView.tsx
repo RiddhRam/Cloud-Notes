@@ -10,10 +10,11 @@ type NotesData = {
 type NotesViewProps = {
     fetchCloudNotes: () => Promise<[]>;
     createNewNote: (noteTitleAndBody: string) => Promise<string>;
+    editNote: (saveId: string, noteTitleAndBody: string) => Promise<number>;
     profileData: ProfileData;
 }
 
-export default function NotesView({ fetchCloudNotes, createNewNote, profileData }: NotesViewProps) {
+export default function NotesView({ fetchCloudNotes, createNewNote, editNote, profileData }: NotesViewProps) {
 
     const [searchTerm, setSearchTerm] = useState("")
     const [fetchedNotes, setFetchedNotes] = useState<NotesData[]>([])
@@ -60,18 +61,24 @@ export default function NotesView({ fetchCloudNotes, createNewNote, profileData 
 
         let saveId = noteSaveId;
 
+        let noteData = `${title}${breakString}${body}`
+
         // If no saveId, this is a new note and needs to be added to the database
         if (saveId == "") {
             // Save to cloud, returns saveId from the SQL database
-            saveId = await createNewNote(`${title}${breakString}${body}`)
+            saveId = await createNewNote(noteData)
             if (saveId == "ERROR") {
                 return;
             }
+        } 
+        // Otherwise, update the existing note
+        else {
+            await editNote(saveId,noteData)
         }
 
         const newNote: NotesData = {
             saveId,
-            note: `${title}${breakString}${body}`
+            note: noteData
         };
 
         const noteIndex = fetchedNotes.findIndex(n => n.saveId == saveId)
