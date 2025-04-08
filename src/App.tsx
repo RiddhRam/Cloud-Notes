@@ -105,10 +105,22 @@ function App() {
 
       return response.status;
     } catch (error) {
-      console.error("Create note failed", error);
+      console.error("Edit note failed", error);
       return 400;
     }
-    
+  }
+
+  async function deleteNote(saveId: string): Promise<number> {
+    try {
+      const response = await axios.post("/deleteNote", {
+        id: saveId,
+      });
+
+      return response.status;
+    } catch (error) {
+      console.error("Delete note failed", error);
+      return 400;
+    }
   }
 
   return (
@@ -139,6 +151,7 @@ function App() {
                 fetchCloudNotes={fetchCloudNotes} 
                 createNewNote={createNewNote} 
                 editNote={editNote} 
+                deleteNote={deleteNote}
                 profileData={profileData} /> : <Navigate to="/login" />
             }
           ></Route>

@@ -156,9 +156,26 @@ def edit_note():
         # Update the note
         note.save_data = note_data
         db.session.commit()
-        return jsonify({'message': 'Note updated successfully'}), 200
+        return jsonify(), 200
     else:
-        return jsonify({'error': 'Note not found'}), 404
+        return jsonify({'error': 'Note not found'}), 400
+    
+@api.route('/deleteNote', methods=['POST'])
+@login_required 
+def delete_note():
+    data = request.get_json()
+    id = data.get('id')
+
+    # Find the existing note
+    note = UserNotes.query.filter_by(save_id=id, user_id=current_user.id).first()
+
+    if note:
+        # Update the note
+        db.session.delete(note)
+        db.session.commit()
+        return jsonify(), 200
+    else:
+        return jsonify({'error': 'Note not found'}), 400
 
 @api.route('/api/profile', methods=['GET'])
 @login_required

@@ -11,10 +11,11 @@ type NotesViewProps = {
     fetchCloudNotes: () => Promise<[]>;
     createNewNote: (noteTitleAndBody: string) => Promise<string>;
     editNote: (saveId: string, noteTitleAndBody: string) => Promise<number>;
+    deleteNote: (saveId: string) => Promise<number>;
     profileData: ProfileData;
 }
 
-export default function NotesView({ fetchCloudNotes, createNewNote, editNote, profileData }: NotesViewProps) {
+export default function NotesView({ fetchCloudNotes, createNewNote, editNote, deleteNote, profileData }: NotesViewProps) {
 
     const [searchTerm, setSearchTerm] = useState("")
     const [fetchedNotes, setFetchedNotes] = useState<NotesData[]>([])
@@ -81,7 +82,7 @@ export default function NotesView({ fetchCloudNotes, createNewNote, editNote, pr
             note: noteData
         };
 
-        const noteIndex = fetchedNotes.findIndex(n => n.saveId == saveId)
+        const noteIndex = fetchedNotes.findIndex(note => note.saveId == saveId)
         
         // Update existing note if already in fetchedNotes
         if (noteIndex != -1) {
@@ -94,6 +95,16 @@ export default function NotesView({ fetchCloudNotes, createNewNote, editNote, pr
             setFetchedNotes(prev => [...prev, newNote])
         }
             
+        setShowModal(false)
+    }
+
+    const handleDeleteNote = async () => {
+        await deleteNote(noteSaveId);
+
+        setFetchedNotes((prevNotes) =>
+            prevNotes ? prevNotes.filter((note) => note.saveId !== noteSaveId) : []
+        );
+
         setShowModal(false)
     }
 
@@ -202,7 +213,11 @@ export default function NotesView({ fetchCloudNotes, createNewNote, editNote, pr
 
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '30px' }}>
                             <button onClick={handleCancel} style={{ backgroundColor: '#adadadff' }}>Cancel</button>
-                            <button onClick={handleCancel} style={{ backgroundColor: '#ed5353' }}>Delete</button>
+                            
+                            {noteSaveId != "" && 
+                            <button onClick={handleDeleteNote} style={{ backgroundColor: '#ed5353' }}>Delete</button>
+                            }
+                            
                             <button onClick={handleSaveNote} style={{ backgroundColor: "#39ff14" }}>Save</button>
                         </div>
                     </div>
