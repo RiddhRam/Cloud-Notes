@@ -89,7 +89,7 @@ function App() {
         note: noteTitleAndBody,
       });
 
-      return response.data.saveid;
+      return response.data.id;
     } catch (error) {
       console.error("Create note failed", error);
       return "ERROR";

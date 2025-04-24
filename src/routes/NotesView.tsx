@@ -65,16 +65,18 @@ export default function NotesView({ fetchCloudNotes, createNewNote, editNote, de
         let noteData = `${title}${breakString}${body}`
 
         // If no saveId, this is a new note and needs to be added to the database
-        if (saveId == "") {
+        if (saveId == "" || saveId == undefined) {
+
             // Save to cloud, returns saveId from the SQL database
             saveId = await createNewNote(noteData)
+
             if (saveId == "ERROR") {
                 return;
             }
         } 
         // Otherwise, update the existing note
         else {
-            await editNote(saveId,noteData)
+            await editNote(saveId, noteData)
         }
 
         const newNote: NotesData = {
@@ -82,7 +84,7 @@ export default function NotesView({ fetchCloudNotes, createNewNote, editNote, de
             note: noteData
         };
 
-        const noteIndex = fetchedNotes.findIndex(note => note.saveId == saveId)
+        const noteIndex = fetchedNotes.findIndex(note => note.saveId == newNote.saveId)
         
         // Update existing note if already in fetchedNotes
         if (noteIndex != -1) {
