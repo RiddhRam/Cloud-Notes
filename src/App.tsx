@@ -83,10 +83,11 @@ function App() {
     return [];
   }
 
-  async function createNewNote(noteTitleAndBody: string): Promise<string> {
+  async function createNewNote(noteTitle: string, noteBody: string): Promise<string> {
     try {
       const response = await axios.post("/createNewNote", {
-        note: noteTitleAndBody,
+        title: noteTitle,
+        body: noteBody
       });
 
       return response.data.id;
@@ -96,11 +97,12 @@ function App() {
     }
   }
 
-  async function editNote(saveId: string, noteTitleAndBody: string): Promise<number> {
+  async function editNote(saveId: string, noteTitle: string, noteBody: string): Promise<number> {
     try {
       const response = await axios.post("/editNote", {
         id: saveId,
-        note: noteTitleAndBody,
+        title: noteTitle,
+        body: noteBody
       });
 
       return response.status;

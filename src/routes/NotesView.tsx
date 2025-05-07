@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react'
 
 type NotesData = {
     saveId: string;
-    note: string;
+    title: string;
+    body: string;
 }
 
 type NotesViewProps = {
     fetchCloudNotes: () => Promise<[]>;
-    createNewNote: (noteTitleAndBody: string) => Promise<string>;
-    editNote: (saveId: string, noteTitleAndBody: string) => Promise<number>;
+    createNewNote: (noteTitle: string, noteBody: string) => Promise<string>;
+    editNote: (saveId: string, noteTitle: string, noteBody: string) => Promise<number>;
     deleteNote: (saveId: string) => Promise<number>;
     profileData: ProfileData;
 }
@@ -25,11 +26,12 @@ export default function NotesView({ fetchCloudNotes, createNewNote, editNote, de
     const [noteBody, setNoteBody] = useState("")
 
     const [showModal, setShowModal] = useState(false)
-    
 
-    /* Only show notes who contain the search term in their name or body */
-    const filteredNotes = fetchedNotes.filter(({ note }) => 
-        note.toLowerCase().includes(searchTerm.toLowerCase())
+    /* Only show notes which contain the search term in their title or body */
+    const filteredNotes = fetchedNotes.filter(
+        ({ title, body }) =>
+            title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            body.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const handleCreateNewNote = () => {
@@ -40,11 +42,9 @@ export default function NotesView({ fetchCloudNotes, createNewNote, editNote, de
     }
 
     const handleEditNote = (noteData: NotesData) => {
-        const splitArray = noteData.note.split(breakString);
-
         setNoteSaveId(noteData.saveId)
-        setNoteTitle(splitArray[0])
-        setNoteBody(splitArray[1])
+        setNoteTitle(noteData.title)
+        setNoteBody(noteData.body)
 
         setShowModal(true)
     }
@@ -62,13 +62,11 @@ export default function NotesView({ fetchCloudNotes, createNewNote, editNote, de
 
         let saveId = noteSaveId;
 
-        let noteData = `${title}${breakString}${body}`
-
         // If no saveId, this is a new note and needs to be added to the database
         if (saveId == "" || saveId == undefined) {
 
             // Save to cloud, returns saveId from the SQL database
-            saveId = await createNewNote(noteData)
+            saveId = await createNewNote(title, body)
 
             if (saveId == "ERROR") {
                 return;
@@ -76,12 +74,13 @@ export default function NotesView({ fetchCloudNotes, createNewNote, editNote, de
         } 
         // Otherwise, update the existing note
         else {
-            await editNote(saveId, noteData)
+            await editNote(saveId, title, body)
         }
 
         const newNote: NotesData = {
-            saveId,
-            note: noteData
+            saveId: saveId,
+            title: title,
+            body: body
         };
 
         const noteIndex = fetchedNotes.findIndex(note => note.saveId == newNote.saveId)
@@ -113,8 +112,6 @@ export default function NotesView({ fetchCloudNotes, createNewNote, editNote, de
     const handleCancel = () => {
         setShowModal(false)
     }
-
-    const breakString = "<CLOUD BREAK>"
 
     useEffect(() => {
         if (profileData == null)
@@ -163,10 +160,10 @@ export default function NotesView({ fetchCloudNotes, createNewNote, editNote, de
             : (filteredNotes.map((noteData, index) => (
                 <button onClick={() => handleEditNote(noteData)} key={index} style={{ maxWidth: '350px', textAlign: 'start', filter: "drop-shadow(0 0 0.5rem black)" }}>
                     <h2 style={{ whiteSpace: 'nowrap', overflow: "hidden", textOverflow: "ellipsis"}}>
-                        {noteData.note.split(breakString)[0]}
+                        {noteData.title}
                     </h2>
                     <p style={{ whiteSpace: 'nowrap', overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {noteData.note.split(breakString)[1]}
+                        {noteData.body}
                     </p>
                 </button>
             )))}

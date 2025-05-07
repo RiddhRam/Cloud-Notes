@@ -43,7 +43,8 @@ class UserNotes(db.Model):
 
     save_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    save_data = db.Column(db.JSON, nullable=False)
+    note_title = db.Column(db.String, nullable=False)
+    note_body = db.Column(db.String, nullable=False)
 
     def __repr__(self):
         return f'<UserNotes {self.save_id} for User {self.user_id}>'
@@ -129,12 +130,14 @@ def logout():
 @login_required 
 def create_new_note():
     data = request.get_json()
-    note_data = data.get('note')
+    title = data.get('title')
+    body = data.get('body')
 
     # Write the note
     new_note = UserNotes(
         user_id = current_user.id,
-        save_data = note_data
+        note_title = title,
+        note_body = body
     )
     db.session.add(new_note)
     db.session.commit()
@@ -147,14 +150,16 @@ def create_new_note():
 def edit_note():
     data = request.get_json()
     id = data.get('id')
-    note_data = data.get('note')
+    title = data.get('title')
+    body = data.get('body')
 
     # Find the existing note
     note = UserNotes.query.filter_by(save_id=id, user_id=current_user.id).first()
 
     if note:
         # Update the note
-        note.save_data = note_data
+        note.note_title = title,
+        note.note_body = body,
         db.session.commit()
         return jsonify(), 200
     else:
@@ -192,7 +197,7 @@ def get_user_notes():
     notes = UserNotes.query.filter_by(user_id=current_user.id).all()
     
     # extract JSON from each note
-    notes_data = [{"saveId": note.save_id, "note": note.save_data} for note in notes] 
+    notes_data = [{"saveId": note.save_id, "title": note.note_title, "body": note.note_body} for note in notes] 
     
     return jsonify({"notes": notes_data}), 200
 
