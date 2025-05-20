@@ -12,7 +12,7 @@ export default function NavBar({ onLogout, profileData }: NavbarProps) {
         <div className='Navbar'>
             <div className='App-title'>
                 <Link to="/" className='NavbarText'>
-                    <h1 style={{color: "#5fdbfb"}}>🗒️ Cloud Notes</h1>
+                    <h1 style={{color: "#4baec7"}}>🗒️ Cloud Notes</h1>
                 </Link>
             </div>
 

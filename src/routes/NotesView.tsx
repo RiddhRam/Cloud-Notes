@@ -162,7 +162,7 @@ export default function NotesView({ fetchCloudNotes, createNewNote, editNote, de
                     <h2 style={{ whiteSpace: 'nowrap', overflow: "hidden", textOverflow: "ellipsis"}}>
                         {noteData.title}
                     </h2>
-                    <p style={{ whiteSpace: 'nowrap', overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <p style={{ whiteSpace: 'nowrap', overflow: "hidden", textOverflow: "ellipsis", color: 'white' }}>
                         {noteData.body}
                     </p>
                 </button>
