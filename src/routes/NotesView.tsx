@@ -69,12 +69,17 @@ export default function NotesView({ fetchCloudNotes, createNewNote, editNote, de
             saveId = await createNewNote(title, body)
 
             if (saveId == "ERROR") {
+                setShowModal(false)
                 return;
             }
         } 
         // Otherwise, update the existing note
         else {
-            await editNote(saveId, title, body)
+            let code = await editNote(saveId, title, body)
+
+            if (code == 400) {
+                setShowModal(false)
+            }
         }
 
         const newNote: NotesData = {
@@ -100,7 +105,12 @@ export default function NotesView({ fetchCloudNotes, createNewNote, editNote, de
     }
 
     const handleDeleteNote = async () => {
-        await deleteNote(noteSaveId);
+        let code = await deleteNote(noteSaveId);
+        
+        if (code == 400) {
+            setShowModal(false)
+            return;
+        }
 
         setFetchedNotes((prevNotes) =>
             prevNotes ? prevNotes.filter((note) => note.saveId !== noteSaveId) : []

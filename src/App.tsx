@@ -21,10 +21,11 @@ function App() {
   useEffect(() => {
     async function checkAuthStatus() {
       try {
-        const response = await axios.get('/api/profile');
+        const response = await axios.get('/api/profile', { withCredentials: true });
         // Set user data if logged in
         setProfileData(response.data);
       } catch (error) {
+        console.log(error)
         // If the request fails it means the user is not logged in
         console.log("User not authenticated.");
         setProfileData(null);
@@ -53,7 +54,7 @@ function App() {
       .catch((error) => {
         if (error.response) {
           console.log(error.response);
-          alert(`Error: ${error.response.data.message}`);
+          alert(`Error: ${error.response.data.detail}`);
         }
       });
   }

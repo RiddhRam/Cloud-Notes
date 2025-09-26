@@ -1,208 +1,246 @@
 import os
 import re
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-from flask_bcrypt import Bcrypt
+from datetime import datetime, timedelta, timezone
+import uvicorn
+from fastapi import FastAPI, Depends, HTTPException, status, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from pydantic import BaseModel
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from dotenv import load_dotenv
 
-# This is for the .env in this folder
 load_dotenv()
 
-# Initialization and configuration
-api = Flask(__name__)
-api.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
-api.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-api.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# FastAPI app instance
+api = FastAPI()
+# So we can call this from the "backend" script in package.json
+app = api
 
 # The frontend is on localhost, but the backend is on 127.0.0.1 so we need CORS
-# and also we need to support credentials so the user stays logged in
-CORS(api, supports_credentials=True)
+api.add_middleware(
+    CORSMiddleware,
+    # This is for running locally when I was developing. If you want to use this on AWS or GCP, change this
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# Extensions
-db = SQLAlchemy(api)
-bcrypt = Bcrypt(api)
-login_manager = LoginManager()
-login_manager.init_app(api)
+# Password hashing context using passlib
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Database Model
-class User(db.Model, UserMixin):
+# JWT settings
+SECRET_KEY = os.getenv('FLASK_SECRET_KEY')
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+DATABASE_URL = os.getenv('DATABASE_URL')
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# SQL table schemas
+class User(Base):
     __tablename__ = 'user'
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(150), unique=True, index=True, nullable=False)
+    password_hash = Column(String(128), nullable=False)
 
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(150), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
-
-    def __repr__(self):
-        return f'<User {self.email}>'
-    
-# Database Model for User Notes
-class UserNotes(db.Model):
+class UserNotes(Base):
     __tablename__ = 'user_notes'
+    save_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    note_title = Column(String, nullable=False)
+    note_body = Column(String, nullable=False)
 
-    save_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    note_title = db.Column(db.String, nullable=False)
-    note_body = db.Column(db.String, nullable=False)
+# Pydantic data schemas. I decided to use this because the alternative is not as clean and readable.
+# Schema for user authentication
+class UserAuth(BaseModel):
+    email: str
+    password: str
 
-    def __repr__(self):
-        return f'<UserNotes {self.save_id} for User {self.user_id}>'
+# Schema for creating a note
+class NoteCreate(BaseModel):
+    title: str
+    body: str
 
-# Flask-Login User Loader
-# This function is used by Flask-Login to load the user from the user ID stored in the session
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
+# Schema for editing a note
+class NoteEdit(NoteCreate):
+    id: int
 
-# API Routes
-@api.route('/signup', methods=['POST'])
-def signup():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
+# Schema for deleting a note
+class NoteDelete(BaseModel):
+    id: int
+
+# Schema for note data
+class NoteResponse(BaseModel):
+    saveId: int
+    title: str
+    body: str
+
+    class Config:
+        from_attributes = True
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing token cookie")
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+
+@api.post('/signup', status_code=status.HTTP_201_CREATED)
+def signup(user_data: UserAuth, response: Response, db: Session = Depends(get_db)):
 
     pattern = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
+    if not re.fullmatch(pattern, user_data.email):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
 
-    if not re.fullmatch(pattern, email):
-        return jsonify({"message": "Please enter a valid email address."}), 400
-
-    if (len(password) < 6):
-        return jsonify({"message": "Password needs to be at least 6 characters!"}), 400
-
-    if not email or not password:
-        return jsonify({"message": "Email and password are required"}), 400
+    if len(user_data.password) < 6:
+        raise HTTPException(status_code=400, detail="Password needs to be at least 6 characters!")
 
     # Check if user already exists
-    if User.query.filter_by(email=email).first():
-        return jsonify({"message": "Email address already in use"}), 409
+    existing_user = db.query(User).filter(User.email == user_data.email).first()
+    if existing_user:
+        raise HTTPException(status_code=409, detail="Email address already in use")
 
     # Hash the password
-    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    hashed_password = get_password_hash(user_data.password)
 
     # Create new user
-    new_user = User(
-        email=email,
-        password_hash=hashed_password,
+    new_user = User(email=user_data.email, password_hash=hashed_password)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    # Create JWT token
+    access_token = create_access_token(data={"sub": user_data.email})
+    
+    # Set the token in an HTTP-only cookie
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        samesite='lax',
+        # secure=True,  # IMPORTANT: Uncomment this in production (requires HTTPS)
     )
-    db.session.add(new_user)
-    db.session.commit()
-
-    # Log the user in automatically after signup
-    login_user(new_user)
-
-    return jsonify({
-        "email": new_user.email
-    }), 201
+    
+    return {"email": new_user.email, "id": new_user.id}
 
 
-@api.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
-
-    if not email or not password:
-        return jsonify({"message": "Email and password are required"}), 400
-
-    user = User.query.filter_by(email=email).first()
+@api.post('/login')
+def login(form_data: UserAuth, response: Response, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == form_data.email).first()
 
     # Check if user exists and password is correct
-    if not user or not bcrypt.check_password_hash(user.password_hash, password):
-        return jsonify({"message": "Invalid email or password"}), 401
+    if not user or not verify_password(form_data.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
 
-    # Log the user in
-    login_user(user)
-
-    return jsonify({
-        "email": user.email
-    }), 200
-
-
-@api.route('/logout', methods=['POST'])
-# Because of @login_required, only logged in users can access this
-@login_required 
-def logout():
-    logout_user()
-    return jsonify({"message": "Successfully logged out"}), 200
-
-@api.route('/createNewNote', methods=['POST'])
-@login_required 
-def create_new_note():
-    data = request.get_json()
-    title = data.get('title')
-    body = data.get('body')
-
-    # Write the note
-    new_note = UserNotes(
-        user_id = current_user.id,
-        note_title = title,
-        note_body = body
+    # Create JWT token
+    access_token = create_access_token(data={"sub": user.email})
+    
+    # Set the token in an HTTP-only cookie
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        samesite='lax',
+        # secure=True,  # IMPORTANT: Uncomment this in production (requires HTTPS)
     )
-    db.session.add(new_note)
-    db.session.commit()
-
-    # Return saveId
-    return jsonify({"id": new_note.save_id}), 200
-
-@api.route('/editNote', methods=['POST'])
-@login_required 
-def edit_note():
-    data = request.get_json()
-    id = data.get('id')
-    title = data.get('title')
-    body = data.get('body')
-
-    # Find the existing note
-    note = UserNotes.query.filter_by(save_id=id, user_id=current_user.id).first()
-
-    if note:
-        # Update the note
-        note.note_title = title,
-        note.note_body = body,
-        db.session.commit()
-        return jsonify(), 200
-    else:
-        return jsonify({'error': 'Note not found'}), 400
     
-@api.route('/deleteNote', methods=['POST'])
-@login_required 
-def delete_note():
-    data = request.get_json()
-    id = data.get('id')
+    # Return user data in the body
+    return {"email": user.email, "message": "Login successful"}
 
-    # Find the existing note
-    note = UserNotes.query.filter_by(save_id=id, user_id=current_user.id).first()
 
-    if note:
-        # Update the note
-        db.session.delete(note)
-        db.session.commit()
-        return jsonify(), 200
-    else:
-        return jsonify({'error': 'Note not found'}), 400
+@api.post('/logout')
+def logout():
+    return {"message": "Successfully logged out"}
 
-@api.route('/api/profile', methods=['GET'])
-@login_required
-def my_profile():
-    # current_user is automatically populated by Flask-Login with the user's data
-    return jsonify({
-        "email": current_user.email,
-        "id": current_user.id
-    }), 200
 
-@api.route('/api/notes', methods=['GET'])
-@login_required
-def get_user_notes():
-    notes = UserNotes.query.filter_by(user_id=current_user.id).all()
-    
-    # extract JSON from each note
-    notes_data = [{"saveId": note.save_id, "title": note.note_title, "body": note.note_body} for note in notes] 
-    
-    return jsonify({"notes": notes_data}), 200
+@api.post('/createNewNote')
+def create_new_note(note_data: NoteCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    new_note = UserNotes(
+        user_id=current_user.id,
+        note_title=note_data.title,
+        note_body=note_data.body
+    )
+    db.add(new_note)
+    db.commit()
+    db.refresh(new_note)
+    return {"id": new_note.save_id}
+
+
+@api.post('/editNote')
+def edit_note(note_data: NoteEdit, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    note = db.query(UserNotes).filter(UserNotes.save_id == note_data.id, UserNotes.user_id == current_user.id).first()
+
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+
+    note.note_title = note_data.title
+    note.note_body = note_data.body
+    db.commit()
+    return {"message": "Note updated successfully"}
+
+
+@api.post('/deleteNote')
+def delete_note(note_data: NoteDelete, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    note = db.query(UserNotes).filter(UserNotes.save_id == note_data.id, UserNotes.user_id == current_user.id).first()
+
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+
+    db.delete(note)
+    db.commit()
+    return {"message": "Note deleted successfully"}
+
+
+@api.get('/api/profile')
+def my_profile(current_user: User = Depends(get_current_user)):
+    return {"email": current_user.email, "id": current_user.id}
+
+@api.get('/api/notes')
+def get_user_notes(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    notes = db.query(UserNotes).filter(UserNotes.user_id == current_user.id).all()
+
+    notes_data = [{"saveId": note.save_id, "title": note.note_title, "body": note.note_body} for note in notes]
+    return {"notes": notes_data}
 
 if __name__ == '__main__':
-    # This context is needed to create the database tables
-    with api.app_context():
-        db.create_all()
-    api.run(debug=True)
+    # This creates tables if they weren't created, like in a new SQL databsae
+    Base.metadata.create_all(bind=engine)
+
+    uvicorn.run(api, host="127.0.0.1", port=5000)
